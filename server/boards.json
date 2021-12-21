@@ -1,0 +1,10 @@
+{
+    "boards": [{
+        "id": 1,
+        "name": "board 1"
+    }, {
+        "id": 2,
+        "name": "board 2"
+    }],
+    "news": []
+}
