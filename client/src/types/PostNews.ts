@@ -1,6 +1,7 @@
 export interface PostNews {
   title: string;
   body: string;
-  createdOn: Date;
+  createdOn?: Date;
   author: string;
+  boardId: number;
 }

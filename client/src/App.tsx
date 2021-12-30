@@ -1,24 +1,41 @@
+import { lazy, Suspense } from "react";
+import { Route, Switch, Redirect } from "react-router-dom";
+import Login from "./pages/Login";
+import { ProtectedRoute } from "./ProtectedRoute";
+import useUserState from "./hooks/useUserState";
+
 import "./App.css";
-import useFetch from "./hooks/useFetch";
-import { useAppContext } from "./providers/app-context/AppContext";
-import { Board } from "./types/Board";
-import { ServiceStatus } from "./types/Service";
+import Loader from "./UI/Loader";
+import AppProvider from "./providers/app-context/AppProvider";
+import ErrorHandler from "./app-error/ErrorHanlder";
+
+const LazyBoards = lazy(() => import("./pages/Boards"));
 
 function App() {
-  const service = useFetch<Board[]>("/api/boards");
-  const { isLoading } = useAppContext();
+  const { isAuthenticated } = useUserState();
 
   return (
-    <div className="App">
-      {isLoading && <div>Loading...</div>}
-      {service.status === ServiceStatus.Loaded && (
-        <div>
-          {service.payload.map((b) => (
-            <div>{b.id}</div>
-          ))}
+    <AppProvider>
+      <Suspense fallback={<Loader />}>
+        <div className="App">
+          <ErrorHandler>
+            <Switch>
+              <Route path="/login" component={Login} />
+              <ProtectedRoute
+                path="/boards"
+                redirectPath="/login"
+                isAuthenticated={isAuthenticated}
+                component={LazyBoards}
+              />
+              <Route path="*">
+                <Redirect to="/boards" />
+              </Route>
+            </Switch>
+          </ErrorHandler>
         </div>
-      )}
-    </div>
+        <Loader />
+      </Suspense>
+    </AppProvider>
   );
 }
 

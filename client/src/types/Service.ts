@@ -3,6 +3,7 @@ export enum ServiceStatus {
   Loaded = "Loaded",
   Fail = "fail",
   Success = "success",
+  Error = "error",
 }
 
 interface ServiceInit {
@@ -16,4 +17,12 @@ interface ServiceFail {
   status: ServiceStatus.Fail;
   error: Error;
 }
-export type Service<T> = ServiceInit | ServiceLoaded<T> | ServiceFail;
+interface ServiceError {
+  status: ServiceStatus.Error;
+  error: Error;
+}
+export type Service<TypeOut> =
+  | ServiceInit
+  | ServiceLoaded<TypeOut>
+  | ServiceFail
+  | ServiceError;

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useState } from "react";
 import { AppContext } from "../providers/app-context/AppContext";
 import { Service, ServiceStatus } from "../types/Service";
 
@@ -6,18 +6,21 @@ type Method = "GET" | "POST" | "PUT" | "DELETE";
 
 const API_ROOT_URL = "http://localhost:8080";
 
-function useFetch<T>(
-  url: string,
-  method: Method = "GET",
-  body?: T
-): Service<T> {
+interface ServiceResponse<TypeIn, TypeOut> {
+  initiateRequest: (url: string, method?: Method, body?: TypeIn) => void;
+  result: Service<TypeOut | null>;
+}
+
+export function useFetch<TypeIn, TypeOut>(): ServiceResponse<TypeIn, TypeOut> {
   const { setError, setIsLoading } = useContext(AppContext);
-  const [result, setResult] = useState<Service<T>>({
+  const [result, setResult] = useState<Service<TypeOut | null>>({
     status: ServiceStatus.Init,
   });
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const initiateRequest = useCallback(
+    async (url: string, method: Method = "GET", body?: TypeIn) => {
+      setError(null);
+      setIsLoading(true);
       const requestOptions =
         method === "POST" || method === "PUT"
           ? {
@@ -32,30 +35,27 @@ function useFetch<T>(
           if (!res.ok && res.status === 500)
             return Promise.reject(res.statusText);
 
+          if (res.ok && res.status === 204) return Promise.resolve(null);
+
           return res.json();
         })
         .then((res) => {
+          setIsLoading(false);
+          if (res === null)
+            setResult({ status: ServiceStatus.Loaded, payload: null });
           if (res.status === ServiceStatus.Success) {
             setResult({ status: ServiceStatus.Loaded, payload: res.data });
           } else {
             setResult({ status: ServiceStatus.Fail, error: res.message });
           }
-
-          setIsLoading(false);
         })
         .catch((err) => {
           setIsLoading(false);
           setError(err);
         });
-    };
+    },
+    [setError, setIsLoading, setResult]
+  );
 
-    fetchData();
-
-    setError(null);
-    setIsLoading(true);
-  }, [url, body, method, setError, setIsLoading]);
-
-  return result;
+  return { initiateRequest, result };
 }
-
-export default useFetch;
